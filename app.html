@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FF6B35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Coinzinho">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icone-192.png">
+<title>Coinzinho</title>
+<style>
+  /* =====================================
+     TEMA (claro/escuro automático, igual ao painel do leilão)
+     ===================================== */
+  :root {
+    color-scheme: light dark;
+    --bg: #fff7f2;
+    --card: #ffffff;
+    --text: #2b1d16;
+    --muted: #8a776d;
+    --border: #f1e3da;
+    --accent: #ff6b35;
+    --accent-dark: #e4521d;
+    --accent-soft: #ffe6da;
+    --coin: #ffb703;
+    --ok: #1f9d55;
+    --ok-soft: #e3f6ea;
+    --danger: #d64545;
+    --danger-soft: #fde8e8;
+    --sombra: 0 4px 14px rgba(120, 60, 20, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17120f;
+      --card: #231c18;
+      --text: #f6eee9;
+      --muted: #b3a197;
+      --border: #3a2f29;
+      --accent-soft: #3d2418;
+      --ok-soft: #173325;
+      --danger-soft: #3a1c1c;
+      --sombra: none;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  button, input, select { font: inherit; color: inherit; }
+  .escondido { display: none !important; }
+  .pagina { max-width: 560px; margin: 0 auto; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top)); }
+
+  /* ---------- Componentes básicos ---------- */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 16px; margin-bottom: 14px; box-shadow: var(--sombra); }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+  .btn {
+    border: none; border-radius: 14px; padding: 13px 18px; font-weight: 700; cursor: pointer;
+    background: var(--accent); color: #fff; width: 100%; transition: transform 0.08s, background 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.secundario { background: var(--accent-soft); color: var(--accent-dark); }
+  .btn.ok { background: var(--ok); }
+  .btn.perigo { background: var(--danger-soft); color: var(--danger); }
+  .btn.pequeno { width: auto; padding: 8px 14px; font-size: 0.85rem; border-radius: 11px; }
+  .btn.fantasma { background: transparent; color: var(--muted); width: auto; padding: 6px 10px; }
+  .linha-botoes { display: flex; gap: 10px; }
+  .linha-botoes > * { flex: 1; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 12px 0 6px; }
+  input, select {
+    width: 100%; padding: 13px 14px; border-radius: 13px; border: 1.5px solid var(--border);
+    background: var(--bg); outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .vazio { text-align: center; color: var(--muted); padding: 18px 8px; font-size: 0.92rem; }
+
+  /* ---------- Avatar e moedas ---------- */
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; flex-shrink: 0;
+  }
+  .avatar.grande { width: 64px; height: 64px; font-size: 1.6rem; }
+  .moeda { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; white-space: nowrap; }
+  .moeda::before {
+    content: "C"; width: 1.15em; height: 1.15em; border-radius: 50%; background: var(--coin); color: #7a4b00;
+    font-size: 0.7em; display: inline-flex; align-items: center; justify-content: center; font-weight: 900;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  }
+  .pos { color: var(--ok); }
+  .neg { color: var(--danger); }
+
+  /* ---------- Tela inicial ---------- */
+  .hero { text-align: center; padding: 40px 8px 24px; }
+  .logo {
+    width: 96px; height: 96px; margin: 0 auto 16px; border-radius: 28px;
+    background: linear-gradient(145deg, #ff8a4c, #ff6b35 55%, #f4511e); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.35); animation: pulo 2.4s ease-in-out infinite;
+  }
+  .logo span { width: 54px; height: 54px; border-radius: 50%; background: var(--coin); color: #7a4b00; font-size: 2rem; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15); }
+  @keyframes pulo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .hero h1 { font-size: 2rem; }
+  .passos { display: grid; gap: 10px; margin: 24px 0; }
+  .passo { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; text-align: left; }
+  .passo b { font-size: 1.4rem; }
+
+  /* ---------- Perfis (tela Entrar) ---------- */
+  .grade-perfis { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .perfil { background: var(--card); border: 1.5px solid var(--border); border-radius: 18px; padding: 16px 8px; text-align: center; cursor: pointer; }
+  .perfil:active { transform: scale(0.97); }
+  .perfil .nome { font-weight: 700; margin-top: 8px; }
+  .perfil .papel { color: var(--muted); font-size: 0.8rem; }
+
+  /* ---------- Cabeçalho do app ---------- */
+  .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .topo .info { flex: 1; min-width: 0; }
+  .topo .info b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ---------- Cofre ---------- */
+  .cofre {
+    background: linear-gradient(145deg, #ff8a4c, #ff6b35 60%, #f4511e); color: #fff; border: none;
+    border-radius: 24px; padding: 20px; margin-bottom: 14px; box-shadow: 0 10px 24px rgba(255, 107, 53, 0.28);
+  }
+  .cofre .rotulo { opacity: 0.9; font-size: 0.9rem; }
+  .cofre .saldo { font-size: 2.6rem; margin: 4px 0 14px; }
+  .cofre .saldo.moeda::before { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.15); }
+  .acoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .acao { background: rgba(255,255,255,0.18); border: none; color: #fff; border-radius: 14px; padding: 10px 4px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  .acao span { display: block; font-size: 1.35rem; margin-bottom: 2px; }
+  .acao:active { background: rgba(255,255,255,0.3); }
+
+  /* ---------- Chips (seletor de filho, filtros) ---------- */
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; scrollbar-width: none; }
+  .chip { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--border); background: var(--card); border-radius: 999px; padding: 6px 14px 6px 6px; cursor: pointer; white-space: nowrap; font-weight: 600; }
+  .chip.simples { padding: 8px 14px; }
+  .chip .avatar { width: 28px; height: 28px; font-size: 0.8rem; }
+  .chip.ativo { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
+
+  /* ---------- Listas ---------- */
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .item:first-of-type { border-top: none; }
+  .item .icone { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+  .item .meio { flex: 1; min-width: 0; }
+  .item .titulo { font-weight: 650; overflow-wrap: anywhere; }
+  .item .detalhe { color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+  .item.feito .titulo { text-decoration: line-through; opacity: 0.6; }
+  .selo { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); }
+  .selo.ok { background: var(--ok-soft); color: var(--ok); }
+  .selo.perigo { background: var(--danger-soft); color: var(--danger); }
+
+  /* ---------- Barra de abas ---------- */
+  .abas {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--card); border-top: 1px solid var(--border);
+    display: flex; justify-content: center; padding-bottom: env(safe-area-inset-bottom);
+  }
+  .abas .dentro { display: flex; width: 100%; max-width: 560px; }
+  .aba { flex: 1; background: none; border: none; padding: 9px 2px 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); cursor: pointer; position: relative; }
+  .aba span { display: block; font-size: 1.35rem; margin-bottom: 1px; filter: grayscale(1); opacity: 0.7; }
+  .aba.ativa { color: var(--accent); }
+  .aba.ativa span { filter: none; opacity: 1; }
+  .aba .badge { position: absolute; top: 4px; left: 54%; background: var(--danger); color: #fff; font-size: 0.68rem; border-radius: 999px; padding: 1px 6px; }
+
+  /* ---------- Folha (modal de baixo pra cima) ---------- */
+  .fundo { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; opacity: 0; transition: opacity 0.2s; }
+  .fundo.aberto { opacity: 1; }
+  .folha {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; max-width: 560px; margin: 0 auto;
+    background: var(--card); border-radius: 24px 24px 0 0; padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.25s ease;
+  }
+  .folha.aberta { transform: translateY(0); }
+  .folha .puxador { width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 12px; }
+  .folha .rodape { margin-top: 18px; }
+  .cores { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cores label { margin: 0; }
+  .cores input { display: none; }
+  .cores span { display: block; width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+  .cores input:checked + span { border-color: var(--text); }
+  .sugestoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* ---------- Aviso (toast) ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px);
+    background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-weight: 600; font-size: 0.92rem;
+    z-index: 200; opacity: 0; transition: opacity 0.2s, transform 0.2s; max-width: calc(100% - 32px); text-align: center; pointer-events: none;
+  }
+  .toast.visivel { opacity: 1; transform: translate(-50%, 0); }
+  .toast.erro { background: var(--danger); color: #fff; }
+
+  .rodape-legal { text-align: center; color: var(--muted); font-size: 0.8rem; margin: 22px 0 8px; line-height: 1.7; }
+  .rodape-legal a { color: var(--muted); }
+  .aceite { display: flex; gap: 10px; align-items: flex-start; font-size: 0.86rem; color: var(--text); font-weight: 500; margin-top: 16px; line-height: 1.45; }
+  .aceite input { width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; accent-color: var(--accent); }
+  .aceite a { color: var(--accent-dark); }
+  .codigo-familia { font-size: 2rem; font-weight: 900; letter-spacing: 6px; text-align: center; padding: 10px; background: var(--accent-soft); color: var(--accent-dark); border-radius: 16px; margin: 8px 0 12px; }
+</style>
+</head>
+<body>
+
+<!-- =====================================
+     TELA INICIAL
+     ===================================== -->
+<div id="tela-inicio" class="pagina escondido">
+  <div class="hero">
+    <div class="logo"><span>C</span></div>
+    <h1>Coinzinho</h1>
+    <p class="sub">Tarefas, mesada e recompensas da família — tudo em coins.</p>
+  </div>
+  <div class="passos">
+    <div class="passo"><b>👨‍👩‍👧</b><div><strong>Pais</strong> criam tarefas, dão mesada e aprovam pedidos.</div></div>
+    <div class="passo"><b>✅</b><div><strong>Filhos</strong> concluem tarefas e juntam coins.</div></div>
+    <div class="passo"><b>🛍️</b><div>Coins viram <strong>recompensas</strong> combinadas na loja da família.</div></div>
+  </div>
+  <button class="btn" onclick="irPara('criar')">Criar minha família</button>
+  <div style="height:10px"></div>
+  <button class="btn secundario" onclick="irPara('entrar')">Já tenho um código</button>
+  <div class="rodape-legal" data-rodape></div>
+</div>
+
+<!-- =====================================
+     CRIAR FAMÍLIA
+     ===================================== -->
+<div id="tela-criar" class="pagina escondido">
+  <button class="btn fantasma" onclick="irPara('inicio')">← Voltar</button>
+  <h1>Criar família</h1>
+  <p class="sub">Você será o primeiro responsável. Depois cadastra os filhos.</p>
+  <form id="form-criar" class="card" style="margin-top:16px">
+    <label>Nome da família</label>
+    <input name="nomeFamilia" placeholder="Ex.: Família Santos" maxlength="40" required>
+    <label>Seu nome</label>
+    <input name="nomeResponsavel" placeholder="Ex.: Wil" maxlength="30" required>
+    <label>Você é</label>
+    <select name="rotulo"><option>Pai</option><option>Mãe</option></select>
+    <label>Crie um PIN (4 a 6 números)</label>
+    <input name="pin" type="password" inputmode="numeric" pattern="\d{4,6}" maxlength="6" placeholder="Só os pais sabem" required>
+    <label class="aceite">
+      <input type="checkbox" name="aceite" required>
+      <span>Tenho 18 anos ou mais, sou pai, mãe ou responsável legal pelas crianças que vou cadastrar, li e aceito os
+      <a href="/termos" target="_blank">Termos de Uso</a> e a <a href="/privacidade" target="_blank">Política de Privacidade</a>
+      e <strong>autorizo o tratamento dos dados delas</strong> para o funcionamento do Coinzinho.</span>
+    </label>
+    <div class="rodape" style="margin-top:18px"><button class="btn" type="submit">Criar família</button></div>
+  </form>
+  <div class="rodape-legal" data-rodape></div>
+</div>
+
+<!-- =====================================
+     ENTRAR (CÓDIGO → PERFIL → PIN)
+     ===================================== -->
+<div id="tela-entrar" class="pagina escondido">
+  <button class="btn fantasma" onclick="voltarDoEntrar()">← Voltar</button>
+  <div id="entrar-codigo">
+    <h1>Entrar na família</h1>
+    <p class="sub">Peça o código de 6 letras pra quem criou a família.</p>
+    <form id="form-codigo" class="card" style="margin-top:16px">
+      <label>Código da família</label>
+      <input name="codigo" autocapitalize="characters" autocomplete="off" maxlength="6" placeholder="EX: K7PQ2M"
+        style="text-transform:uppercase; letter-spacing:4px; font-weight:800; text-align:center; font-size:1.3rem" required>
+      <div style="margin-top:18px"><button class="btn" type="submit">Continuar</button></div>
+    </form>
+  </div>
+  <div id="entrar-perfis" class="escondido">
+    <h1 id="entrar-nome-familia">Quem é você?</h1>
+    <p class="sub">Toque no seu perfil.</p>
+    <div id="lista-perfis" class="grade-perfis" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- =====================================
+     APP (DEPOIS DE ENTRAR)
+     ===================================== -->
+<div id="tela-app" class="pagina escondido">
+  <div class="topo">
+    <div id="topo-avatar" class="avatar"></div>
+    <div class="info">
+      <b id="topo-nome"></b>
+      <span class="sub" id="topo-familia"></span>
+    </div>
+    <button class="btn fantasma" onclick="atualizar(true)" title="Atualizar">⟳</button>
+  </div>
+  <div id="conteudo"></div>
+</div>
+
+<nav id="abas" class="abas escondido"><div class="dentro" id="abas-dentro"></div></nav>
+
+<div id="fundo" class="fundo escondido" onclick="fecharFolha()"></div>
+<div id="folha" class="folha escondido"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+// =====================================
+// ESTADO DO APP
+// =====================================
+const CHAVE_TOKEN = "coinzinho_token";
+const CORES = ["#FF6B35", "#FF9800", "#0288D1", "#2E7D32", "#7C4DFF", "#E91E63", "#00897B", "#F4511E"];
+
+let token = lerToken();
+let painel = null;          // resposta de /api/painel
+let aba = null;             // aba atual
+let filhoId = null;         // filho selecionado (visão do pai)
+let codigoDigitado = null;  // tela Entrar
+let perfisDaTela = [];      // perfis mostrados na tela Entrar
+let filtroHistorico = { membroId: "todos", fluxo: "todos" };
+let polling = null;
+let sobre = null;           // quem desenvolve (vem do servidor, /api/sobre)
+
+// localStorage pode falhar (aba anônima, etc.) — o app continua funcionando.
+function lerToken() { try { return localStorage.getItem(CHAVE_TOKEN); } catch (e) { return null; } }
+function salvarToken(t) { token = t; try { t ? localStorage.setItem(CHAVE_TOKEN, t) : localStorage.removeItem(CHAVE_TOKEN); } catch (e) {} }
+
+// =====================================
+// UTILITÁRIOS
+// =====================================
+function esc(texto) {
+  return String(texto == null ? "" : texto).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function inicial(nome) { return esc((nome || "?").trim().charAt(0).toUpperCase()); }
+function avatar(m, classe) { return `<div class="avatar ${classe || ""}" style="background:${esc(m.cor)}">${inicial(m.nome)}</div>`; }
+function moeda(valor, sinal) {
+  const classe = sinal ? (valor > 0 ? "pos" : "neg") : "";
+  const txt = sinal && valor > 0 ? "+" + valor : String(valor);
+  return `<span class="moeda ${classe}">${txt}</span>`;
+}
+function dataCurta(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) + " · " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+function rodapeHtml() {
+  const d = sobre ? sobre.desenvolvedor : null;
+  const quem = d ? `Desenvolvido por ${esc(d.nome)} · <a href="mailto:${esc(d.email)}">${esc(d.email)}</a><br>` : "";
+  return `${quem}<a href="/termos" target="_blank">Termos de Uso</a> · <a href="/privacidade" target="_blank">Privacidade</a>`;
+}
+function preencherRodapes() { document.querySelectorAll("[data-rodape]").forEach((el) => (el.innerHTML = rodapeHtml())); }
+async function carregarSobre() {
+  try { sobre = await api("/api/sobre"); } catch (e) { /* sem rede: mostra só os links */ }
+  preencherRodapes();
+}
+
+function souPai() { return painel && painel.eu.papel === "responsavel"; }
+
+const TIPOS = {
+  tarefa: { icone: "✅", nome: "Tarefa" },
+  pedido: { icone: "🙋", nome: "Pedido aprovado" },
+  mesada: { icone: "📅", nome: "Mesada" },
+  presente: { icone: "🎁", nome: "Presente" },
+  cobranca: { icone: "💸", nome: "Cobrança" },
+  multa: { icone: "⚠️", nome: "Multa" },
+  resgate: { icone: "🛍️", nome: "Resgate" },
+};
+
+let timerToast = null;
+function avisar(msg, tipo) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "toast visivel" + (tipo === "erro" ? " erro" : "");
+  clearTimeout(timerToast);
+  timerToast = setTimeout(() => { el.className = "toast"; }, 2600);
+}
+
+// =====================================
+// CHAMADAS À API
+// =====================================
+async function api(caminho, corpo, metodo) {
+  const opcoes = { method: metodo || (corpo ? "POST" : "GET"), headers: { "Content-Type": "application/json" } };
+  if (token) opcoes.headers.Authorization = "Bearer " + token;
+  if (corpo) opcoes.body = JSON.stringify(corpo);
+  let resp;
+  try {
+    resp = await fetch(caminho, opcoes);
+  } catch (e) {
+    throw new Error("Sem conexão com o servidor do Coinzinho.");
+  }
+  const dados = await resp.json().catch(() => ({ ok: false, erro: "Resposta inválida do servidor." }));
+  if (resp.status === 401 && token) {
+    salvarToken(null);
+    mostrarTela("inicio");
+    throw new Error(dados.erro || "Sessão expirada.");
+  }
+  if (!dados.ok) throw new Error(dados.erro || "Algo deu errado.");
+  return dados;
+}
+
+// Executa uma ação, avisa o resultado e recarrega o painel.
+async function executar(caminho, corpo, mensagemOk) {
+  try {
+    const r = await api(caminho, corpo || {});
+    if (mensagemOk) avisar(typeof mensagemOk === "function" ? mensagemOk(r) : mensagemOk);
+    await atualizar();
+    return r;
+  } catch (e) {
+    avisar(e.message, "erro");
+    return null;
+  }
+}
+
+// =====================================
+// NAVEGAÇÃO ENTRE TELAS
+// =====================================
+function mostrarTela(nome) {
+  ["inicio", "criar", "entrar", "app"].forEach((t) => document.getElementById("tela-" + t).classList.toggle("escondido", t !== nome));
+  document.getElementById("abas").classList.toggle("escondido", nome !== "app");
+  if (nome !== "app" && polling) { clearInterval(polling); polling = null; }
+  window.scrollTo(0, 0);
+}
+function irPara(nome) {
+  if (nome === "entrar") {
+    document.getElementById("entrar-codigo").classList.remove("escondido");
+    document.getElementById("entrar-perfis").classList.add("escondido");
+  }
+  mostrarTela(nome);
+}
+function voltarDoEntrar() {
+  if (!document.getElementById("entrar-perfis").classList.contains("escondido")) irPara("entrar");
+  else irPara("inicio");
+}
+
+// =====================================
+// CRIAR FAMÍLIA
+// =====================================
+document.getElementById("form-criar").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const corpo = Object.fromEntries(new FormData(ev.target));
+  corpo.aceite = corpo.aceite === "on";
+  try {
+    const r = await api("/api/familias", corpo);
+    salvarToken(r.token);
+    ev.target.reset();
+    avisar("Família criada! Código: " + r.codigo);
+    aba = "familia";
+    await abrirApp();
+  } catch (e) { avisar(e.message, "erro"); }
+});
+
+// =====================================
+// ENTRAR: CÓDIGO → PERFIS → PIN
+// =====================================
+document.getElementById("form-codigo").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const codigo = new FormData(ev.target).get("codigo").trim().toUpperCase();
+  try {
+    const r = await api("/api/familias/" + encodeURIComponent(codigo));
+    codigoDigitado = r.familia.codigo;
+    document.getElementById("entrar-nome-familia").textContent = r.familia.nome;
+    perfisDaTela = r.membros;
+    document.getElementById("lista-perfis").innerHTML = r.membros.map((m, i) => `
+      <div class="perfil" onclick="escolherPerfil(${i})">
+        ${avatar(m, "grande")}
+        <div class="nome">${esc(m.nome)}</div>
+        <div class="papel">${m.papel === "responsavel" ? esc(m.rotulo) : "Filho(a)"} ${m.temPin ? "🔒" : ""}</div>
+      </div>`).join("");
+    document.getElementById("entrar-codigo").classList.add("escondido");
+    document.getElementById("entrar-perfis").classList.remove("escondido");
+  } catch (e) { avisar(e.message, "erro"); }
+});
+
+async function entrarNoPerfil(membroId, pin) {
+  const r = await api("/api/entrar", { codigo: codigoDigitado, membroId, pin });
+  salvarToken(r.token);
+  aba = null;
+  await abrirApp();
+}
+
+function escolherPerfil(indice) {
+  const { id: membroId, temPin, nome } = perfisDaTela[indice];
+  if (!temPin) {
+    entrarNoPerfil(membroId).catch((e) => avisar(e.message, "erro"));
+    return;
+  }
+  abrirFolha(`Oi, ${esc(nome)}! Digite seu PIN`, `
+    <input name="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" required
+      style="text-align:center; font-size:1.6rem; letter-spacing:10px">`,
+    async (dados) => { await entrarNoPerfil(membroId, dados.pin); }, "Entrar");
+}
+
+async function sair() {
+  if (!confirm("Sair deste perfil neste celular?")) return;
+  try { await api("/api/sair", {}); } catch (e) {}
+  salvarToken(null);
+  painel = null;
+  mostrarTela("inicio");
+}
+
+// =====================================
+// APP: CARREGA O PAINEL E DESENHA A ABA ATUAL
+// =====================================
+async function abrirApp() {
+  await atualizar();
+  if (!painel) { mostrarTela("inicio"); return; }
+  mostrarTela("app");
+  if (!polling) polling = setInterval(() => { if (!document.hidden && !folhaAberta()) atualizar(); }, 15000);
+}
+
+async function atualizar(avisarAoTerminar) {
+  try {
+    painel = await api("/api/painel");
+  } catch (e) {
+    avisar(e.message, "erro");
+    return;
+  }
+  const abasValidas = souPai() ? ["inicio", "pedidos", "loja", "historico", "familia"] : ["carteira", "loja", "historico"];
+  if (!abasValidas.includes(aba)) aba = abasValidas[0];
+  if (souPai() && !painel.filhos.some((f) => f.id === filhoId)) filhoId = painel.filhos[0] ? painel.filhos[0].id : null;
+
+  document.getElementById("topo-avatar").outerHTML = `<div id="topo-avatar" class="avatar" style="background:${esc(painel.eu.cor)}">${inicial(painel.eu.nome)}</div>`;
+  document.getElementById("topo-nome").textContent = painel.eu.nome + (souPai() ? ` (${painel.eu.rotulo})` : "");
+  document.getElementById("topo-familia").textContent = painel.familia.nome;
+  desenharAbas();
+  await desenharConteudo();
+  if (avisarAoTerminar) avisar("Atualizado");
+  if (painel.precisaAceitar && !document.getElementById("form-folha")?.querySelector("[name=aceite]")) pedirAceite();
+}
+
+function desenharAbas() {
+  const lista = souPai()
+    ? [["inicio", "🏠", "Início"], ["pedidos", "🙋", "Pedidos"], ["loja", "🛍️", "Loja"], ["historico", "📜", "Histórico"], ["familia", "👨‍👩‍👧", "Família"]]
+    : [["carteira", "🐷", "Carteira"], ["loja", "🛍️", "Loja"], ["historico", "📜", "Histórico"]];
+  const pendentes = painel.pedidosPendentes.length;
+  document.getElementById("abas-dentro").innerHTML = lista.map(([id, icone, nome]) => `
+    <button class="aba ${aba === id ? "ativa" : ""}" onclick="trocarAba('${id}')">
+      <span>${icone}</span>${nome}
+      ${id === "pedidos" && pendentes ? `<i class="badge">${pendentes}</i>` : ""}
+    </button>`).join("");
+}
+
+function trocarAba(id) {
+  aba = id;
+  desenharAbas();
+  desenharConteudo();
+  window.scrollTo(0, 0);
+}
+
+async function desenharConteudo() {
+  const el = document.getElementById("conteudo");
+  const telas = {
+    inicio: telaInicioPai,
+    pedidos: telaPedidos,
+    loja: telaLoja,
+    historico: telaHistorico,
+    familia: telaFamilia,
+    carteira: telaCarteira,
+  };
+  el.innerHTML = await telas[aba]();
+}
+
+// =====================================
+// PEDAÇOS DE TELA REUTILIZADOS
+// =====================================
+function itemTarefa(t) {
+  const feitaHoje = t.repeticao === "diaria" && t.ultimaConclusao === painel.hoje;
+  const feita = t.concluida || feitaHoje;
+  const detalhe = t.repeticao === "diaria" ? (feitaHoje ? "Feita hoje · volta amanhã" : "Todo dia") : (t.concluida ? "Concluída" : "Uma vez");
+  let botoes = "";
+  if (!feita) botoes += `<button class="btn ok pequeno" onclick="concluirTarefa('${t.id}')">${souPai() ? "Feita" : "Concluir"}</button>`;
+  if (souPai()) botoes += `<button class="btn fantasma" title="Remover" onclick="removerTarefa('${t.id}')">✕</button>`;
+  return `<div class="item ${feita ? "feito" : ""}">
+    <div class="icone">${feita ? "✅" : "📝"}</div>
+    <div class="meio"><div class="titulo">${esc(t.titulo)}</div><div class="detalhe">${moeda(t.coins)} · ${detalhe}</div></div>
+    ${botoes}
+  </div>`;
+}
+
+function itemTransacao(t, mostrarNome) {
+  const tipo = TIPOS[t.tipo] || { icone: "•", nome: t.tipo };
+  const quem = mostrarNome ? `${esc(t.membroNome)} · ` : "";
+  const autor = t.autorNome ? ` · por ${esc(t.autorNome)}` : "";
+  return `<div class="item">
+    <div class="icone">${tipo.icone}</div>
+    <div class="meio"><div class="titulo">${esc(t.motivo || tipo.nome)}</div><div class="detalhe">${quem}${dataCurta(t.criadoEm)}${autor}</div></div>
+    ${moeda(t.valor, true)}
+  </div>`;
+}
+
+function itemPedido(p, comAcoes) {
+  const status = p.status === "pendente" ? `<span class="selo">Aguardando ${esc(p.responsavelNome || "")}</span>`
+    : p.status === "aprovado" ? `<span class="selo ok">Aprovado por ${esc(p.resolvidoPorNome)}</span>`
+    : `<span class="selo perigo">Recusado por ${esc(p.resolvidoPorNome)}</span>`;
+  const titulo = p.tipo === "recompensa" ? esc(p.motivo) : `Pediu ${p.valor} coins` + (p.motivo ? ` — ${esc(p.motivo)}` : "");
+  const acoes = comAcoes ? `<div class="linha-botoes" style="margin-top:10px">
+      <button class="btn perigo pequeno" onclick="resolverPedido('${p.id}','recusado')">Recusar</button>
+      <button class="btn ok pequeno" onclick="resolverPedido('${p.id}','aprovado')">Aprovar</button>
+    </div>` : "";
+  return `<div class="item" style="flex-wrap:wrap">
+    <div class="icone">${p.tipo === "recompensa" ? "🛍️" : "🙋"}</div>
+    <div class="meio">
+      <div class="titulo">${souPai() ? esc(p.membroNome) + ": " : ""}${titulo}</div>
+      <div class="detalhe">${dataCurta(p.criadoEm)} · ${status}</div>
+    </div>
+    ${moeda(p.tipo === "recompensa" ? -p.valor : p.valor, true)}
+    <div style="width:100%">${acoes}</div>
+  </div>`;
+}
+
+// =====================================
+// ACEITE DOS TERMOS (responsável novo ou termos atualizados)
+// =====================================
+function pedirAceite() {
+  abrirFolha("📄 Termos e privacidade", `
+    <p class="sub">Pra continuar usando o Coinzinho, leia e aceite os documentos abaixo.</p>
+    <label class="aceite">
+      <input type="checkbox" name="aceite" required>
+      <span>Tenho 18 anos ou mais, sou responsável legal pelas crianças desta família, li e aceito os
+      <a href="/termos" target="_blank">Termos de Uso</a> e a <a href="/privacidade" target="_blank">Política de Privacidade</a>
+      e autorizo o tratamento dos dados delas para o funcionamento do Coinzinho.</span>
+    </label>`,
+    async (d) => { await api("/api/aceitar", { aceite: d.aceite === "on" }); painel.precisaAceitar = false; avisar("Obrigado!"); },
+    "Aceitar e continuar");
+}
+
+// =====================================
+// ABA INÍCIO (PAI/MÃE)
+// =====================================
+function telaInicioPai() {
+  if (!painel.filhos.length) {
+    return `<div class="card vazio">
+      <div style="font-size:2.5rem">👶</div>
+      <p>Nenhum filho cadastrado ainda.</p>
+      <button class="btn" onclick="formMembro('filho')">Cadastrar filho</button>
+    </div>`;
+  }
+  const filho = painel.filhos.find((f) => f.id === filhoId);
+  const tarefas = painel.tarefas.filter((t) => t.membroId === filho.id);
+  const mesadas = painel.mesadas.filter((m) => m.membroId === filho.id);
+  const transacoes = painel.ultimasTransacoes.filter((t) => t.membroId === filho.id).slice(0, 5);
+  const pendentes = painel.pedidosPendentes.filter((p) => p.membroId === filho.id);
+
+  return `
+    <div class="chips">
+      ${painel.filhos.map((f) => `<div class="chip ${f.id === filho.id ? "ativo" : ""}" onclick="filhoId='${f.id}'; desenharConteudo()">${avatar(f)}${esc(f.nome)}</div>`).join("")}
+      <div class="chip simples" onclick="formMembro('filho')">+ Filho</div>
+    </div>
+
+    <div class="cofre">
+      <div class="rotulo">Cofre de ${esc(filho.nome)}</div>
+      <div class="saldo moeda">${filho.saldo}</div>
+      <div class="acoes">
+        <button class="acao" onclick="formMovimento('presente')"><span>🎁</span>Presentear</button>
+        <button class="acao" onclick="formMovimento('cobranca')"><span>💸</span>Cobrar</button>
+        <button class="acao" onclick="formMovimento('multa')"><span>⚠️</span>Multa</button>
+        <button class="acao" onclick="formMesada()"><span>📅</span>Mesada</button>
+      </div>
+    </div>
+
+    ${pendentes.length ? `<div class="card"><h2>Pedidos de ${esc(filho.nome)} <span class="selo">${pendentes.length}</span></h2>${pendentes.map((p) => itemPedido(p, true)).join("")}</div>` : ""}
+
+    <div class="card">
+      <h2>Tarefas <button class="btn secundario pequeno" onclick="formTarefa()">+ Tarefa</button></h2>
+      ${tarefas.length ? tarefas.map(itemTarefa).join("") : `<div class="vazio">Crie tarefas pra ${esc(filho.nome)} ganhar coins.</div>`}
+    </div>
+
+    <div class="card">
+      <h2>Mesadas <button class="btn secundario pequeno" onclick="formMesada()">+ Mesada</button></h2>
+      ${mesadas.length ? mesadas.map((m) => `<div class="item">
+          <div class="icone">📅</div>
+          <div class="meio"><div class="titulo">${moeda(m.valor)} ${m.frequencia === "diaria" ? "todo dia" : "todo dia " + m.diaDoMes}</div>
+          <div class="detalhe">${m.ultimaData ? "Último crédito: " + m.ultimaData.split("-").reverse().join("/") : "Ainda não caiu"}</div></div>
+          <button class="btn fantasma" onclick="removerMesada('${m.id}')">✕</button>
+        </div>`).join("") : `<div class="vazio">Nenhuma mesada agendada.</div>`}
+    </div>
+
+    <div class="card">
+      <h2>Últimos movimentos <button class="btn fantasma" onclick="filtroHistorico.membroId='${filho.id}'; trocarAba('historico')">Ver tudo →</button></h2>
+      ${transacoes.length ? transacoes.map((t) => itemTransacao(t)).join("") : `<div class="vazio">Nada ainda.</div>`}
+    </div>`;
+}
+
+// =====================================
+// ABA CARTEIRA (FILHO)
+// =====================================
+function telaCarteira() {
+  const eu = painel.eu;
+  const meus = [...painel.pedidosPendentes, ...painel.pedidosResolvidos.slice(0, 5)];
+  const proxima = painel.recompensas.find((r) => r.custo > eu.saldo);
+  return `
+    <div class="cofre">
+      <div class="rotulo">Meu cofrinho</div>
+      <div class="saldo moeda">${eu.saldo}</div>
+      ${proxima ? `<div class="rotulo" style="margin:-6px 0 12px">Faltam ${proxima.custo - eu.saldo} pra "${esc(proxima.titulo)}"</div>` : ""}
+      <div class="linha-botoes">
+        <button class="acao" onclick="formPedirCoins()"><span>🙋</span>Pedir coins</button>
+        <button class="acao" onclick="trocarAba('loja')"><span>🛍️</span>Loja</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Minhas tarefas</h2>
+      ${painel.tarefas.length ? painel.tarefas.map(itemTarefa).join("") : `<div class="vazio">Sem tarefas por enquanto. 🎉</div>`}
+    </div>
+
+    <div class="card">
+      <h2>Meus pedidos</h2>
+      ${meus.length ? meus.map((p) => itemPedido(p, false)).join("") : `<div class="vazio">Você ainda não fez pedidos.</div>`}
+    </div>
+
+    <button class="btn fantasma" style="width:100%" onclick="sair()">Sair deste perfil</button>
+    <div class="rodape-legal">${rodapeHtml()}</div>`;
+}
+
+// =====================================
+// ABA PEDIDOS (PAI/MÃE)
+// =====================================
+function telaPedidos() {
+  return `
+    <div class="card">
+      <h2>Aguardando você</h2>
+      ${painel.pedidosPendentes.length ? painel.pedidosPendentes.map((p) => itemPedido(p, true)).join("") : `<div class="vazio">Nenhum pedido pendente. 👍</div>`}
+    </div>
+    <div class="card">
+      <h2>Resolvidos recentemente</h2>
+      ${painel.pedidosResolvidos.length ? painel.pedidosResolvidos.map((p) => itemPedido(p, false)).join("") : `<div class="vazio">Nada por aqui ainda.</div>`}
+    </div>`;
+}
+
+// =====================================
+// ABA LOJA (RECOMPENSAS)
+// =====================================
+function telaLoja() {
+  const recompensas = painel.recompensas;
+  if (souPai()) {
+    return `<div class="card">
+      <h2>Loja da família <button class="btn secundario pequeno" onclick="formRecompensa()">+ Recompensa</button></h2>
+      <p class="sub" style="margin-bottom:8px">Combine com as crianças o que os coins compram.</p>
+      ${recompensas.length ? recompensas.map((r) => `<div class="item">
+          <div class="icone">🎁</div>
+          <div class="meio"><div class="titulo">${esc(r.titulo)}</div><div class="detalhe">${moeda(r.custo)}</div></div>
+          <button class="btn fantasma" onclick="removerRecompensa('${r.id}')">✕</button>
+        </div>`).join("") : `<div class="vazio">Ex.: "1h de videogame", "Escolher a pizza", "Sorvete".</div>`}
+    </div>`;
+  }
+  const saldo = painel.eu.saldo;
+  return `<div class="card">
+    <h2>Loja <span>${moeda(saldo)}</span></h2>
+    ${recompensas.length ? recompensas.map((r) => `<div class="item">
+        <div class="icone">🎁</div>
+        <div class="meio"><div class="titulo">${esc(r.titulo)}</div>
+          <div class="detalhe">${moeda(r.custo)}${r.custo > saldo ? ` · faltam ${r.custo - saldo}` : ""}</div></div>
+        <button class="btn pequeno" ${r.custo > saldo ? "disabled" : ""} onclick="formResgatar('${r.id}')">Resgatar</button>
+      </div>`).join("") : `<div class="vazio">A loja ainda está vazia. Peça pros seus pais criarem recompensas!</div>`}
+  </div>`;
+}
+
+// =====================================
+// ABA HISTÓRICO
+// =====================================
+async function telaHistorico() {
+  const params = new URLSearchParams(filtroHistorico);
+  let lista = [];
+  try { lista = (await api("/api/historico?" + params)).transacoes; } catch (e) { avisar(e.message, "erro"); }
+  const fluxos = [["todos", "Tudo"], ["entradas", "Entradas"], ["saidas", "Saídas"], ["multas", "Multas"]];
+  const chipsFilho = souPai() ? `<div class="chips">
+      <div class="chip simples ${filtroHistorico.membroId === "todos" ? "ativo" : ""}" onclick="filtrar('membroId','todos')">Todos</div>
+      ${painel.filhos.map((f) => `<div class="chip ${filtroHistorico.membroId === f.id ? "ativo" : ""}" onclick="filtrar('membroId','${f.id}')">${avatar(f)}${esc(f.nome)}</div>`).join("")}
+    </div>` : "";
+  return `${chipsFilho}
+    <div class="chips">${fluxos.map(([id, nome]) => `<div class="chip simples ${filtroHistorico.fluxo === id ? "ativo" : ""}" onclick="filtrar('fluxo','${id}')">${nome}</div>`).join("")}</div>
+    <div class="card">
+      ${lista.length ? lista.map((t) => itemTransacao(t, souPai())).join("") : `<div class="vazio">Nenhum movimento com esse filtro.</div>`}
+    </div>`;
+}
+function filtrar(campo, valor) { filtroHistorico[campo] = valor; desenharConteudo(); }
+
+// =====================================
+// ABA FAMÍLIA (PAI/MÃE)
+// =====================================
+function telaFamilia() {
+  return `
+    <div class="card">
+      <h2>Código da família</h2>
+      <p class="sub">Os filhos e o outro responsável usam esse código pra entrar no celular deles.</p>
+      <div class="codigo-familia">${esc(painel.familia.codigo)}</div>
+      <button class="btn secundario" onclick="compartilharCodigo()">Compartilhar convite</button>
+    </div>
+    <div class="card">
+      <h2>Perfis</h2>
+      ${painel.membros.map((m) => `<div class="item">
+          ${avatar(m)}
+          <div class="meio"><div class="titulo">${esc(m.nome)} ${m.id === painel.eu.id ? '<span class="selo">você</span>' : ""}</div>
+          <div class="detalhe">${m.papel === "responsavel" ? esc(m.rotulo) : "Filho(a) · " + m.saldo + " coins"} ${m.temPin ? "· 🔒 PIN" : ""}</div></div>
+          ${m.id !== painel.eu.id ? `<button class="btn fantasma" title="Remover perfil" onclick="formRemoverMembro('${m.id}')">✕</button>` : ""}
+        </div>`).join("")}
+      <div class="linha-botoes" style="margin-top:12px">
+        <button class="btn secundario" onclick="formMembro('filho')">+ Filho</button>
+        <button class="btn secundario" onclick="formMembro('responsavel')">+ Pai/Mãe</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Privacidade e dados</h2>
+      <p class="sub">Seus dados são seus. Baixe uma cópia ou apague tudo quando quiser.</p>
+      <div class="linha-botoes" style="margin-top:12px">
+        <button class="btn secundario" onclick="baixarDados()">Baixar dados</button>
+        <button class="btn perigo" onclick="formExcluirFamilia()">Excluir família</button>
+      </div>
+    </div>
+    <button class="btn fantasma" style="width:100%" onclick="sair()">Sair deste perfil</button>
+    <div class="rodape-legal">${rodapeHtml()}</div>`;
+}
+
+// =====================================
+// DIREITOS DO TITULAR (LGPD)
+// =====================================
+async function baixarDados() {
+  try {
+    const r = await api("/api/exportar");
+    const blob = new Blob([JSON.stringify(r.exportacao, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `coinzinho-${painel.familia.codigo}-${painel.hoje}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+    avisar("Arquivo com seus dados baixado");
+  } catch (e) { avisar(e.message, "erro"); }
+}
+
+function formRemoverMembro(membroId) {
+  const m = painel.membros.find((x) => x.id === membroId);
+  abrirFolha(`Remover ${esc(m.nome)}?`, `
+    <p class="sub">Apaga o perfil e ${m.papel === "filho" ? "todo o histórico, tarefas, pedidos e mesadas dele(a)" : "o acesso dele(a)"}. Não dá pra desfazer.</p>
+    <label>Seu PIN pra confirmar</label>
+    <input name="pin" type="password" inputmode="numeric" maxlength="6" required>`,
+    (d) => enviar(`/api/membros/${membroId}/remover`, d, "Perfil removido"), "Remover definitivamente");
+}
+
+function formExcluirFamilia() {
+  abrirFolha("⚠️ Excluir a família", `
+    <p class="sub">Apaga <strong>todos</strong> os perfis, saldos, tarefas, pedidos e históricos de todos os celulares.
+    Some das cópias de segurança em até 14 dias. <strong>Não dá pra desfazer.</strong> Se quiser, baixe seus dados antes.</p>
+    <label>Digite o código da família (${esc(painel.familia.codigo)})</label>
+    <input name="confirmacao" autocapitalize="characters" autocomplete="off" maxlength="6" required style="text-transform:uppercase">
+    <label>Seu PIN</label>
+    <input name="pin" type="password" inputmode="numeric" maxlength="6" required>`,
+    async (d) => {
+      await api("/api/familia/excluir", d);
+      salvarToken(null);
+      painel = null;
+      mostrarTela("inicio");
+      avisar("Família excluída. Até mais! 👋");
+    }, "Excluir tudo");
+}
+
+async function compartilharCodigo() {
+  const texto = `Entre na família "${painel.familia.nome}" no Coinzinho!\nAbra ${location.origin} e use o código: ${painel.familia.codigo}`;
+  try {
+    if (navigator.share) await navigator.share({ title: "Coinzinho", text: texto });
+    else { await navigator.clipboard.writeText(texto); avisar("Convite copiado!"); }
+  } catch (e) { /* usuário cancelou */ }
+}
+
+// =====================================
+// FOLHA (FORMULÁRIO QUE SOBE DE BAIXO)
+// aoEnviar recebe os campos do formulário como objeto. Se der erro, a
+// folha continua aberta e mostra o aviso.
+// =====================================
+function folhaAberta() { return !document.getElementById("folha").classList.contains("escondido"); }
+
+// Cada folha aberta ganha um número. Se, durante o envio, outra folha
+// for aberta (ex.: depois do PIN abre o aceite dos termos), a primeira
+// não fecha a segunda por engano.
+let geracaoFolha = 0;
+let timerFecharFolha = null;
+
+function abrirFolha(titulo, camposHtml, aoEnviar, textoBotao) {
+  const minha = ++geracaoFolha;
+  clearTimeout(timerFecharFolha);
+  const folha = document.getElementById("folha");
+  const fundo = document.getElementById("fundo");
+  folha.innerHTML = `<div class="puxador"></div><h2>${titulo}</h2>
+    <form id="form-folha">${camposHtml}
+      <div class="rodape"><button class="btn" type="submit">${textoBotao || "Salvar"}</button></div>
+    </form>`;
+  folha.classList.remove("escondido");
+  fundo.classList.remove("escondido");
+  requestAnimationFrame(() => { folha.classList.add("aberta"); fundo.classList.add("aberto"); });
+  const form = document.getElementById("form-folha");
+  const primeiro = form.querySelector("input:not([type=radio]):not([type=hidden])");
+  if (primeiro) setTimeout(() => primeiro.focus(), 260);
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const botao = form.querySelector("button[type=submit]");
+    botao.disabled = true;
+    try {
+      await aoEnviar(Object.fromEntries(new FormData(form)));
+      if (geracaoFolha === minha) fecharFolha();
+    } catch (e) {
+      avisar(e.message, "erro");
+    } finally {
+      botao.disabled = false;
+    }
+  });
+}
+
+function fecharFolha() {
+  const folha = document.getElementById("folha");
+  const fundo = document.getElementById("fundo");
+  folha.classList.remove("aberta");
+  fundo.classList.remove("aberto");
+  clearTimeout(timerFecharFolha);
+  timerFecharFolha = setTimeout(() => { folha.classList.add("escondido"); fundo.classList.add("escondido"); folha.innerHTML = ""; }, 250);
+}
+
+// Mesma coisa que executar(), mas lança o erro pra folha não fechar.
+async function enviar(caminho, corpo, mensagemOk) {
+  const r = await api(caminho, corpo);
+  if (mensagemOk) avisar(typeof mensagemOk === "function" ? mensagemOk(r) : mensagemOk);
+  await atualizar();
+  return r;
+}
+
+const campoValor = (nome, rotulo, placeholder) =>
+  `<label>${rotulo}</label><input name="${nome}" type="number" inputmode="numeric" min="1" max="100000" placeholder="${placeholder || ""}" required>`;
+
+function opcoesResponsaveis() {
+  return painel.membros.filter((m) => m.papel === "responsavel")
+    .map((m) => `<option value="${m.id}">${esc(m.nome)} (${esc(m.rotulo)})</option>`).join("");
+}
+
+// =====================================
+// FORMULÁRIOS DO PAI/MÃE
+// =====================================
+function nomeFilhoAtual() { const f = painel.filhos.find((x) => x.id === filhoId); return f ? esc(f.nome) : ""; }
+
+function formMovimento(tipo) {
+  const config = {
+    presente: { titulo: `🎁 Presentear ${nomeFilhoAtual()}`, sugestoes: ["Boa nota", "Ajudou em casa", "Aniversário"], botao: "Dar coins" },
+    cobranca: { titulo: `💸 Cobrar de ${nomeFilhoAtual()}`, sugestoes: ["Lanche", "Brinquedo", "Passeio"], botao: "Cobrar" },
+    multa: { titulo: `⚠️ Multa pra ${nomeFilhoAtual()}`, sugestoes: ["Videogame demais", "Não fez o dever", "Nota baixa", "Desobedeceu"], botao: "Aplicar multa" },
+  }[tipo];
+  abrirFolha(config.titulo, `
+    ${campoValor("valor", "Quantos coins?", "Ex.: 10")}
+    <label>Motivo</label>
+    <input name="motivo" id="campo-motivo" maxlength="120" placeholder="Opcional">
+    <div class="sugestoes">${config.sugestoes.map((s) => `<button type="button" class="chip simples" onclick="document.getElementById('campo-motivo').value=this.textContent">${s}</button>`).join("")}</div>`,
+    (d) => enviar("/api/movimentos", { ...d, tipo, membroId: filhoId }, (r) => `Feito! Novo saldo: ${r.saldo} coins`), config.botao);
+}
+
+function formTarefa() {
+  abrirFolha(`📝 Nova tarefa pra ${nomeFilhoAtual()}`, `
+    <label>O que precisa ser feito?</label>
+    <input name="titulo" maxlength="60" placeholder="Ex.: Arrumar a cama" required>
+    ${campoValor("coins", "Vale quantos coins?", "Ex.: 10")}
+    <label>Repetição</label>
+    <select name="repeticao"><option value="diaria">Todo dia</option><option value="unica">Só uma vez</option></select>`,
+    (d) => enviar("/api/tarefas", { ...d, membroId: filhoId }, "Tarefa criada!"), "Criar tarefa");
+}
+
+function formMesada() {
+  abrirFolha(`📅 Mesada de ${nomeFilhoAtual()}`, `
+    ${campoValor("valor", "Valor em coins", "Ex.: 20")}
+    <label>Frequência</label>
+    <select name="frequencia" onchange="document.getElementById('bloco-dia').classList.toggle('escondido', this.value !== 'mensal')">
+      <option value="diaria">Todo dia</option><option value="mensal">Todo mês</option>
+    </select>
+    <div id="bloco-dia" class="escondido">
+      <label>Dia do mês (1 a 28)</label>
+      <input name="diaDoMes" type="number" inputmode="numeric" min="1" max="28" value="5">
+    </div>
+    <p class="sub" style="margin-top:10px">A primeira mesada cai no próximo período. Pra dar algo hoje, use Presentear.</p>`,
+    (d) => enviar("/api/mesadas", { ...d, membroId: filhoId }, "Mesada agendada!"), "Agendar");
+}
+
+function formRecompensa() {
+  abrirFolha("🎁 Nova recompensa", `
+    <label>Recompensa</label>
+    <input name="titulo" maxlength="60" placeholder="Ex.: 1h de videogame" required>
+    ${campoValor("custo", "Custa quantos coins?", "Ex.: 50")}`,
+    (d) => enviar("/api/recompensas", d, "Recompensa criada!"), "Criar");
+}
+
+function formMembro(papel) {
+  const ehResp = papel === "responsavel";
+  abrirFolha(ehResp ? "Cadastrar pai/mãe" : "Cadastrar filho", `
+    <label>Nome</label>
+    <input name="nome" maxlength="30" required>
+    ${ehResp ? `<label>É</label><select name="rotulo"><option>Mãe</option><option>Pai</option></select>` : ""}
+    <label>Cor</label>
+    <div class="cores">${CORES.map((c, i) => `<label><input type="radio" name="cor" value="${c}" ${i === 0 ? "checked" : ""}><span style="background:${c}"></span></label>`).join("")}</div>
+    <label>${ehResp ? "PIN (4 a 6 números)" : "PIN (opcional)"}</label>
+    <input name="pin" type="password" inputmode="numeric" maxlength="6" ${ehResp ? "required" : ""} placeholder="${ehResp ? "" : "Deixe vazio pra entrar direto"}">`,
+    async (d) => {
+      const r = await enviar("/api/membros", { ...d, papel }, `${d.nome} cadastrado(a)!`);
+      if (!ehResp) { filhoId = r.membro.id; trocarAba("inicio"); }
+    }, "Cadastrar");
+}
+
+function concluirTarefa(id) { executar(`/api/tarefas/${id}/concluir`, {}, (r) => `+${r.coins} coins! 🎉`); }
+function removerTarefa(id) { if (confirm("Remover esta tarefa?")) executar(`/api/tarefas/${id}/remover`, {}, "Tarefa removida"); }
+function removerMesada(id) { if (confirm("Cancelar esta mesada?")) executar(`/api/mesadas/${id}/remover`, {}, "Mesada cancelada"); }
+function removerRecompensa(id) { if (confirm("Remover da loja?")) executar(`/api/recompensas/${id}/remover`, {}, "Recompensa removida"); }
+function resolverPedido(id, status) { executar(`/api/pedidos/${id}/resolver`, { status }, status === "aprovado" ? "Pedido aprovado ✅" : "Pedido recusado"); }
+
+// =====================================
+// FORMULÁRIOS DO FILHO
+// =====================================
+function formPedirCoins() {
+  abrirFolha("🙋 Pedir coins", `
+    <label>Pedir pra</label>
+    <select name="responsavelId">${opcoesResponsaveis()}</select>
+    ${campoValor("valor", "Quantos coins?", "Ex.: 15")}
+    <label>Pra quê?</label>
+    <input name="motivo" maxlength="120" placeholder="Ex.: Comprar figurinhas">`,
+    (d) => enviar("/api/pedidos", { ...d, tipo: "coins" }, "Pedido enviado! Agora é esperar 🤞"), "Enviar pedido");
+}
+
+function formResgatar(recompensaId) {
+  const r = painel.recompensas.find((x) => x.id === recompensaId);
+  abrirFolha(`🛍️ Resgatar "${esc(r.titulo)}"`, `
+    <p class="sub">Custa ${r.custo} coins. Seus pais precisam aprovar.</p>
+    <label>Pedir pra</label>
+    <select name="responsavelId">${opcoesResponsaveis()}</select>`,
+    (d) => enviar("/api/pedidos", { ...d, tipo: "recompensa", recompensaId }, "Pedido de resgate enviado!"), "Pedir resgate");
+}
+
+// =====================================
+// INÍCIO
+// =====================================
+if ("serviceWorker" in navigator) {
+  // Só funciona em HTTPS ou localhost (regra dos navegadores).
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
+carregarSobre();
+if (token) abrirApp().catch(() => mostrarTela("inicio"));
+else mostrarTela("inicio");
+</script>
+</body>
+</html>

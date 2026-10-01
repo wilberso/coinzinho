@@ -1,0 +1,15 @@
+{
+  "name": "coinzinho-simples",
+  "version": "1.0.0",
+  "description": "Coinzinho: tarefas, mesada e coins para a família (PWA + Node puro)",
+  "main": "servidor.js",
+  "private": true,
+  "scripts": {
+    "start": "node servidor.js",
+    "teste": "node teste.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
